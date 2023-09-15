@@ -3,6 +3,7 @@ A typing game
 */
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 //#include <sstream>
 #include <conio.h> // For _kbhit and _getch on Windows
@@ -179,7 +180,7 @@ void TimerThread() {
             key_to_type = tg.generate();//generate a suggested char
             timer = tg.suggested_time(key_to_type);
             std::cout << "Type '" << key_to_type << "'";
-            for(int i = 0; i < timer / 100; ++i) {
+            for(int i = 0; i < timer / 1000; ++i) {
                 std::cout << '.';
             }// Display the timer in the console
         }//key_to_type and timer_start is all set, print-out is all done.
@@ -187,24 +188,27 @@ void TimerThread() {
         //wait 100 ms and update timer
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         timer = timer - 100;
-        std::cout << "\b \b";
+        if (timer % 1000 < 100) {
+            std::cout << "\b \b";
+        }
 
         //if is_pressed changed, update_key_info, then set key_to_type = 0;
 		if (is_pressed) {//when time expired, this code block will not execute, therefore the key_info is not (and should not be) updated.
+
             is_pressed = false;
+            tg.update_key_info(key_to_type, (key_to_type == key_input), timer);
 
             const key_info & kinfo = tg.get_key_info(key_to_type);
-            std::cout << '(' << (key_to_type == key_input ? congrat[rnd2()] : encourage[rnd2()]);
-			std::cout << "\tyou entered '" << key_to_type << "': #occured = " << kinfo.occ;
-            std::cout << ", time delay = " << tg.suggested_time(key_to_type) - timer << " ms. )" << std::endl;
+            std::cout << key_input << "\t" << (key_to_type == key_input ? congrat[rnd2()] : encourage[rnd2()]);
+			std::cout << " (" << (kinfo.occ-kinfo.error) << "/" << kinfo.occ << ", " ;
+            std::cout << std::fixed << std::setprecision(2) << 0.001*(tg.suggested_time(key_to_type) - timer) << " s. )" << std::endl;
 
-            tg.update_key_info(key_to_type, (key_to_type == key_input), timer);
             key_to_type = 0;
 		}
     }
     stop = true;
     std::cout << std::endl << "Timer expired." << std::endl;
-    tg.print_key_info();
+    //tg.print_key_info();
     tg.save_key_info("all_key_info.txt");
 }
 
